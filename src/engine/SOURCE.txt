@@ -1,0 +1,1 @@
+Stockfish 19: https://github.com/official-stockfish/Stockfish/releases/tag/sf_19
