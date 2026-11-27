@@ -4,9 +4,9 @@ import msilib as msi
 from msilib import schema, sequence
 
 root = Path(__file__).resolve().parents[1]
-dist = root / "dist/Gambit67-1.6.3"
+dist = root / "dist/Gambit67-1.6.10"
 db = msi.init_database(str(dist/"Gambit67-Setup.msi"), schema, "Gambit 67",
-                       "{D4A1B019-E882-4E09-8207-CF2523F9EE7D}", "1.6.3", "Gambit 67")
+                       "{D4A1B019-E882-4E09-8207-CF2523F9EE7D}", "1.6.10", "Gambit 67")
 msi.add_data(db, "Property", [("INSTALLLEVEL","1"), ("ARPNOMODIFY","1"), ("LimitUI","1")])
 for table in sequence.tables:
     rows = [row for row in getattr(sequence,table) if row[2] > 0]

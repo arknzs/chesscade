@@ -1,6 +1,8 @@
 import json
+from soundtrack import Soundtrack
 from circuit import Circuit
-from neon import hearts,piece
+from neon import NeonCheck, VolumeSlider, hearts
+from pieces import PieceSet
 import os
 import queue
 import random
@@ -74,11 +76,14 @@ class PartyMenu:
                            disabledforeground=MUTED,relief="flat",bd=0,
                            font=("Segoe UI",10))
         self.trigger=button(parent,"Партия  ▾",self.open)
-        self.trigger.pack(side="right",padx=14)
 
     def screen(self,title):
-        self.trigger.configure(text=title+"  ▾")
         self.popup.delete(0,"end")
+        if title is None:
+            self.trigger.pack_forget()
+        else:
+            self.trigger.configure(text=title+"  ▾")
+            self.trigger.pack(side="right",padx=14)
 
     def open(self):
         try:
@@ -111,6 +116,9 @@ class App:
         self.circuit=tk.BooleanVar(value=False)
         self.motion=tk.BooleanVar(value=True)
         self.config_path=Path(os.environ["LOCALAPPDATA"])/"Gambit67"/"preferences.json"
+        self.music=Soundtrack(self.config_path.with_name("music.json"))
+        self.music_enabled=tk.BooleanVar(value=self.music.enabled)
+        self.music_volume=tk.IntVar(value=self.music.volume)
         try:
             prefs=json.loads(self.config_path.read_text(encoding="utf8"))
             if prefs.get("rate") in RATES:self.rate.set(prefs["rate"])
@@ -150,6 +158,7 @@ class App:
         self.surface.pack(fill="both",expand=True)
         self.canvas = tk.Canvas(self.surface,bg=INK,highlightthickness=0)
         self.canvas.pack(fill="both",expand=True)
+        self.pieces=PieceSet(self.canvas)
         self.canvas.bind("<Configure>",lambda _: self.draw())
         self.premove=None
         self.canvas.bind("<Button-1>",self.click)
@@ -218,42 +227,102 @@ class App:
         self.menu_page.place(relwidth=1,relheight=1)
         return self.menu_page
 
-    def home(self):
-        page=self.page("Главное меню")
-        self.nav.add_command(label="Новая партия",command=self.setup)
-        self.nav.add_command(label="Выбрать бой",command=self.catalog)
-        self.nav.add_command(label="Практика",command=self.drills)
-        label(page,"Главное меню",28,PAPER,True).pack(anchor="center",pady=(30,24))
-        for title,action in [("Новая партия",self.setup),("Выбрать бой",self.catalog),("Практика",self.drills),("Настройки",self.settings),("Выход",self.close)]:
-            button(page,title,action,action==self.setup).pack(anchor="center",ipadx=30,pady=4)
+    def menu_backdrop(self,page):
+        page.configure(padx=0,pady=0,bg=INK)
+        glow=tk.Canvas(page,bg=INK,highlightthickness=0)
+        glow.place(relwidth=1,relheight=1)
 
-        glow=tk.Canvas(page,height=100,bg=CARD,highlightthickness=0)
-        glow.pack(fill="x",pady=16)
-        def animate():
+        def paint(offset):
             glow.delete("all")
-            offset=int(time.monotonic()*46)%120 if self.motion.get() else 0
-            for x in range(-120,glow.winfo_width()+120,120):
-                for j,col in [(0,"#4e287b"),(5,"#f74b9a"),(12,"#66e8ed")]:
-                    glow.create_line(x+offset+j,92,x+offset+j+95,9,fill=col,width=2)
-            if self.motion.get(): glow.after(40,animate)
-        glow.after_idle(animate)
+            w,h=glow.winfo_width(),glow.winfo_height()
+            for x in range(-h-180,w+180,180):
+                for j,color in [(0,"#251b3d"),(8,"#392049"),(18,"#173639")]:
+                    start=x+offset+j
+                    glow.create_line(start,h,start+h,0,fill=color,width=2)
+
+        job=None
+        def animate():
+            nonlocal job
+            paint(int(time.monotonic()*38)%180)
+            job=glow.after(40,animate)
+
+        def cancel(_):
+            if job is not None:
+                glow.after_cancel(job)
+
+        if self.motion.get():
+            job=glow.after_idle(animate)
+            glow.bind("<Destroy>",cancel)
+        else:
+            glow.bind("<Configure>",lambda _:paint(0))
+
+    def home(self):
+        page=self.page(None)
+        self.menu_backdrop(page)
+        menu=tk.Frame(page,bg=CARD,padx=28,pady=22,highlightbackground="#493660",highlightthickness=1)
+        menu.place(relx=.5,rely=.5,anchor="center")
+        label(menu,"Главное меню",27,PAPER,True).pack(pady=(0,14))
+        for title,action in [("Новая партия",self.setup),("Выбрать бой",self.catalog),("Практика",self.drills),("Настройки",self.settings),("Выход",self.close)]:
+            button(menu,title,action,action==self.setup).pack(fill="x",pady=4)
+
+        audio=tk.Frame(page,bg=CARD,padx=12,pady=9,highlightbackground="#493660",highlightthickness=1)
+        audio.place(relx=1,x=-16,y=16,anchor="ne")
+        def update_audio(*_):
+            self.music.configure(self.music_enabled.get(),self.music_volume.get())
+            toggle.configure(text="Музыка  ·  Вкл." if self.music_enabled.get() else "Музыка  ·  Выкл.",
+                             fg=MINT if self.music_enabled.get() else MUTED)
+            slider.set_muted(not self.music_enabled.get())
+        def toggle_audio():
+            self.music_enabled.set(not self.music_enabled.get())
+            update_audio()
+        toggle=button(audio,"Музыка  ·  Вкл." if self.music_enabled.get() else "Музыка  ·  Выкл.",toggle_audio)
+        toggle.configure(fg=MINT if self.music_enabled.get() else MUTED)
+        toggle.pack(fill="x")
+        slider=VolumeSlider(audio,self.music_volume,update_audio,muted=not self.music_enabled.get())
+        slider.pack(fill="x",pady=(6,0))
 
     def settings(self):
         page=self.page("Настройки")
         self.nav.add_command(label="Главное меню",command=self.home)
-        label(page,"Настройки",24,PAPER,True).pack(anchor="center")
-        label(page,"Частота случайных испытаний",13).pack(anchor="center",pady=(18,4))
-        option_picker(page,self.rate,RATES,6).pack(anchor="center")
-        for title,var in [("QTE при взятии",self.qte),("Добавить лабиринт «Контур» в случайные испытания",self.circuit),("Разрешить ускорение с Shift",self.sprint),("Анимация главного меню",self.motion)]:
-            tk.Checkbutton(page,text=title,variable=var,bg=CARD,fg=PAPER,selectcolor=INK).pack(anchor="center",pady=4)
-        label(page,"Варианты совместных QTE",12,MINT,True).pack(anchor="center")
-        variants=tk.Frame(page,bg=CARD)
-        variants.pack(anchor="center")
-        for i,title in enumerate(("Стекольщик","Маятник","Поперечный поток","Дрейф","Войти в круг","Покинуть круг")):
-            tk.Checkbutton(variants,text=title,variable=self.variants[i],bg=CARD,fg=PAPER,selectcolor=INK).grid(row=i//3,column=i%3,sticky="ew")
-        text_block(page,"Shift — ускорение с инерцией. Вдвоём: белые — WASD и левый Shift, чёрные — стрелки и правый Shift.",10,MINT).pack(anchor="center")
-        text_block(page,"Касание края арены отнимает сердце. Победителю лабиринта — два сердца (максимум пять).",10,MINT).pack(anchor="center",pady=4)
-        button(page,"Сохранить и вернуться",self.save_settings,True).pack(anchor="center",pady=12)
+        self.menu_backdrop(page)
+        card=tk.Frame(page,bg=CARD,padx=22,pady=16,highlightbackground="#493660",highlightthickness=1)
+        card.place(relx=.5,rely=.5,relwidth=.89,anchor="center")
+
+        label(card,"Настройки",25,PAPER,True).pack(pady=(0,9))
+        section_color="#231e33"
+        timing=tk.Frame(card,bg=section_color,padx=11,pady=9)
+        timing.pack(fill="x")
+        label(timing,"Частота случайных испытаний",11,MINT,True).pack(anchor="w",pady=(0,5))
+        option_picker(timing,self.rate,RATES,6).pack(fill="x")
+
+        options=tk.Frame(card,bg=CARD)
+        options.pack(fill="x",pady=(10,8))
+        for col,title,rows in [
+            (0,"Игра и интерфейс",[
+                ("QTE при взятии",self.qte),
+                ("Лабиринт «Контур» в случайных QTE",self.circuit),
+                ("Ускорение с Shift",self.sprint),
+                ("Анимация фона меню",self.motion),
+            ]),
+            (1,"Варианты совместных QTE",list(zip(
+                ("Стекольщик","Маятник","Поперечный поток","Дрейф","Войти в круг","Покинуть круг"),
+                self.variants))),
+        ]:
+            options.columnconfigure(col,weight=1,uniform="settings")
+            group=tk.Frame(options,bg=section_color,padx=9,pady=8)
+            group.grid(row=0,column=col,sticky="nsew",padx=(0,5) if col==0 else (5,0))
+            label(group,title,11,MINT,True).pack(anchor="w",pady=(0,5))
+            for text,var in rows:
+                NeonCheck(group,text,var).pack(fill="x",pady=1)
+
+        notes=tk.Frame(card,bg=section_color,padx=10,pady=7)
+        notes.pack(fill="x")
+        for hint in (
+            "Ускорение с инерцией. Вдвоём: белые — WASD и левый Shift, чёрные — стрелки и правый Shift.",
+            "Край арены отнимает сердце. Победа в лабиринте даёт два сердца, максимум — пять.",
+        ):
+            label(notes,hint,9,MUTED).pack(anchor="w")
+        button(card,"Сохранить и вернуться",self.save_settings,True).pack(pady=(10,0))
 
     def save_settings(self):
         if not any(v.get() for v in self.variants):
@@ -669,6 +738,17 @@ class App:
             return chess.square(7-col,row)
         return chess.square(col,7-row)
 
+    def highlighted_moves(self):
+        if self.selected is None:
+            return set()
+        board=self.board
+        if not self.mine():
+            board=board.copy(stack=False)
+            board.turn=self.role!="guest"
+            board.ep_square=None
+        return {move.to_square for move in board.generate_legal_moves(
+            from_mask=chess.BB_SQUARES[self.selected])}
+
     def draw(self):
         c = self.canvas
         w,h = c.winfo_width(),c.winfo_height()
@@ -677,7 +757,7 @@ class App:
         self.geometry = x0,y0,cell
         c.delete("all")
         last = self.state["last"] if self.state else ""
-        legal = {m.to_square for m in self.board.legal_moves if m.from_square==self.selected}
+        legal = self.highlighted_moves()
         for row in range(8):
             for col in range(8):
                 sq = self.square(col,row)
@@ -691,7 +771,7 @@ class App:
                 c.create_rectangle(x,y,x+cell,y+cell,fill=color,outline="")
                 p = self.board.piece_at(sq)
                 if p:
-                    piece(c,x,y,cell,p)
+                    self.pieces.draw(x,y,cell,p)
                 if sq in legal:
                     radius = cell*(.43 if p else .095)
                     cx,cy=x+cell/2,y+cell/2
@@ -780,6 +860,7 @@ class App:
 
     def poll(self):
         try:
+            self.music.tick(external=self.proc is not None)
             while self.link:
                 try: kind,data=self.link.events.get_nowait()
                 except queue.Empty: break
@@ -871,6 +952,7 @@ class App:
             self.encounter_dir=None
 
     def close(self):
+        self.music.close()
         self.worker.shutdown(wait=False,cancel_futures=True)
         if self.link: self.link.close()
         self.stop_encounter()
