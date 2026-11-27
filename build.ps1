@@ -16,7 +16,7 @@ if (!(Test-Path 'src/engine/stockfish.exe')) {
 }
 python -m pip install -r requirements.txt
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
-python -m PyInstaller --noconfirm --clean --onefile --windowed --distpath dist/Stockfish --name Gambit67 --add-data "src/engine;engine" --icon src/gambit.ico --add-data "src/GambitEncounter.class;." --add-data "src/gambit.ico;." --add-data "licenses;licenses" src/main.py
+python -m PyInstaller --noconfirm --clean --onefile --windowed --distpath dist/Gambit67-1.6.2 --name Gambit67 --add-data "src/engine;engine" --icon src/gambit.ico --add-data "src/GambitEncounter.class;." --add-data "src/gambit.ico;." --add-data "licenses;licenses" src/main.py
 if ($LASTEXITCODE) { exit $LASTEXITCODE }
 python tools/installer.py
 exit $LASTEXITCODE
