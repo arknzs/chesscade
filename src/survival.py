@@ -132,13 +132,29 @@ class DuelView(tk.Canvas):
         self.keys=set()
         self.role=role
         self.sprint=True
-        self.bind("<KeyPress>",lambda e:self.keys.add(movement_key(e)))
+        self.buffer_turns=False
+        self.pending={}
+        self.bind("<KeyPress>",self.press)
         self.bind("<KeyRelease>",lambda e:self.keys.discard(movement_key(e)))
-        self.bind("<FocusOut>",lambda _:self.keys.clear())
+        self.bind("<FocusOut>",self.clear_keys)
         self.bind("<Button-1>",lambda _:self.focus_set())
         self.bind("<Map>",lambda _: self.focus_set())
         self.place(relwidth=1,relheight=1)
         self.focus_set()
+
+    def clear_keys(self,event):
+        self.keys.clear()
+        self.pending.clear()
+
+    def press(self,event):
+        key=movement_key(event)
+        if self.buffer_turns and key not in self.keys:
+            directions={"a":(-1,0),"d":(1,0),"w":(0,-1),"s":(0,1),
+                        "left":(-1,0),"right":(1,0),"up":(0,-1),"down":(0,1)}
+            if key in directions:
+                side=key in "wasd" if self.role=="local" else self.role!="guest"
+                self.pending[side]=directions[key]
+        self.keys.add(key)
 
     def direction(self, side):
         left,right,up,down=("a","d","w","s") if side or self.role!="local" else ("left","right","up","down")
@@ -148,6 +164,8 @@ class DuelView(tk.Canvas):
         if self.role!="local":
             dx=max(-1,min(1,dx+int("right" in keys)-int("left" in keys)))
             dy=max(-1,min(1,dy+int("down" in keys)-int("up" in keys)))
+        if self.buffer_turns:
+            dx,dy=self.pending.pop(side,(0,0))
         return dx,dy,int(self.sprint and (("shift_l" in keys if side else "shift_r" in keys) if self.role=="local" else bool(keys & {"shift_l","shift_r"})))
 
     def paint(self, frame):

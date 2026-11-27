@@ -297,6 +297,7 @@ class App:
             return
         view=DuelView(field,"practice")
         view.sprint=self.sprint.get()
+        view.buffer_turns=key==6
         model=Circuit() if key==6 else Survival(random.randrange(1000000),True,practice=True)
         if key!=6:
             model.pattern=key
@@ -565,6 +566,8 @@ class App:
             elif event["kind"] in ("survival","duel","arena","maze"):
                 self.arena=DuelView(self.surface,self.role)
                 self.maze_active=event["kind"]=="maze"
+                self.arena.buffer_turns=self.maze_active
+                self.remote_turn=None
                 self.duel=Circuit() if event["kind"]=="maze" else Survival(event["seed"],event["kind"]!="survival")
                 self.remote_dir=(0,0,0)
                 if "pattern" in event:self.duel.pattern=event["pattern"]
@@ -748,6 +751,8 @@ class App:
                     pair=data.get("xy")
                     if isinstance(pair,list) and len(pair)==3 and all(type(x) is int and abs(x)<=1 for x in pair):
                         self.remote_dir=pair
+                        if self.maze_active and any(pair[:2]):
+                            self.remote_turn=pair
                 elif self.role=="guest" and typ=="frame":
                     self.arena.paint(data["frame"])
             if self.role=="host":
@@ -802,6 +807,9 @@ class App:
                     if self.duel_ready:
                         black=self.remote_dir if self.role=="host" else self.duel.bot() if self.role=="bot" else self.arena.direction(False)
                         dt=now-self.duel_time
+                        if self.role=="host" and self.maze_active and self.remote_turn:
+                            black=self.remote_turn
+                            self.remote_turn=None
                         directions=(black,self.arena.direction(True))
                         dead=(self.duel.step(min(.075,dt),directions,clock_dt=dt) if isinstance(self.duel,Survival)
                               else self.duel.step(min(.075,dt),directions))

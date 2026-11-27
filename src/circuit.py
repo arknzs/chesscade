@@ -19,7 +19,6 @@ class Circuit:
         self.heading=[(1,0),(-1,0)]
         self.turn=self.heading[:]
         self.elapsed=0.
-        self.steps=[0,0]
 
     def step(self,dt,inputs):
         self.elapsed+=dt
@@ -29,18 +28,22 @@ class Circuit:
             fast=len(keys)>2 and keys[2]
             if dx or dy:
                 self.turn[side]=(dx,0) if dx else (0,dy)
+                hx,hy=self.heading[side]
+                if self.progress[side] and self.turn[side]==(-hx,-hy):
+                    self.cells[side],self.destination[side]=self.destination[side],self.cells[side]
+                    self.progress[side]=1-self.progress[side]
+                    self.heading[side]=self.turn[side]
             travel=dt/(.083 if fast else .18)
             while travel>0:
                 x,y=self.cells[side]
                 if self.destination[side]==(x,y):
                     a,b=self.turn[side]
-                    if not (fast and self.steps[side]%3==2) and MAP[y+b][x+a]==".":
+                    if MAP[y+b][x+a]==".":
                         self.heading[side]=self.turn[side]
                     a,b=self.heading[side]
                     if MAP[y+b][x+a]!=".":
                         break
                     self.destination[side]=(x+a,y+b)
-                    self.steps[side]+=1
                 remaining=1-self.progress[side]
                 if travel<remaining:
                     self.progress[side]+=travel
@@ -90,4 +93,4 @@ def paint_maze(canvas,frame):
         a,b=ox+(x+.5)*unit,oy+(y+.5)*unit;r=unit*(.26 if i else .38)
         canvas.create_polygon(a,b-r,a+r,b,a,b+r,a-r,b,fill=("#7b55ff","#c6fff4")[i])
     canvas.create_text(w/2,19,text="Контур   ·   %d с   |   Белые %d   /   Чёрные %d"%(frame["seconds"],*frame["scores"][::-1]),fill="white",font=("Segoe UI",12,"bold"))
-    canvas.create_text(w/2,h-17,text="Собирайте точки · Shift ускоряет и удлиняет поворот",fill="#80e8df")
+    canvas.create_text(w/2,h-17,text="Собирайте точки · Shift ускоряет",fill="#80e8df")
