@@ -24,7 +24,7 @@ def computer_move(board, level):
 from arena import Arena, GOLD, INK, MINT, PAPER
 from encounter import launch
 from link import Link, PORT
-from match import Match
+from match import Match, MAX_ENERGY
 
 CARD, MUTED, LINE = "#20312f", "#afc1b5", "#39504a"
 MODES = ["С компьютером", "Вдвоём за доской", "Создать LAN-стол", "Войти по IP"]
@@ -177,7 +177,7 @@ class App:
                        selectcolor=INK,activebackground=CARD,activeforeground=MINT,font=("Segoe UI",11)).pack(anchor="w",pady=(6,2))
         button(self.side,"Сменить арены…" if self.external_path else "Арены: встроенные  ▾",self.pick_external).pack(fill="x")
         button(self.side,"Начать партию   →",self.start,True).pack(side="bottom",fill="x")
-        label(self.side,"За промах в QTE или на арене теряется энергия. Три промаха — поражение.",10,MUTED).pack(anchor="w",pady=9)
+        label(self.side,"За промах в QTE или на арене теряется энергия. Пять промахов — поражение.",10,MUTED).pack(anchor="w",pady=9)
         self.side.winfo_children()[-1].configure(wraplength=222)
         self.draw()
 
@@ -251,7 +251,7 @@ class App:
         self.section("ЭНЕРГИЯ")
         for side,name in [(1,"Белые"),(0,"Чёрные")]:
             hp = state["hp"][side]
-            label(self.side,name+"     "+"◆ "*hp+"◇ "*(3-hp),12,MINT if hp else GOLD).pack(anchor="w")
+            label(self.side,name+"     "+"◆ "*hp+"◇ "*(MAX_ENERGY-hp),12,MINT if hp else GOLD).pack(anchor="w")
         self.section("ПОСЛЕДНИЕ ХОДЫ")
         hist = label(self.side,"   ".join(state["history"]) or "Пока ходов нет",11)
         hist.configure(wraplength=220)

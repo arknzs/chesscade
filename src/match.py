@@ -3,6 +3,9 @@ import time
 import chess
 
 
+MAX_ENERGY = 5
+
+
 class Match:
     def __init__(self, interval, qte, external):
         self.board = chess.Board()
@@ -11,7 +14,7 @@ class Match:
         self.external = external
         self.charges=[3,3]
         self.ready=[0.,0.]
-        self.hp = [3, 3]
+        self.hp = [MAX_ENERGY, MAX_ENERGY]
         self.event = None
         self.serial = 0
         self.history = []
