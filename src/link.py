@@ -38,9 +38,9 @@ class Link:
                 return
             with self.peer as peer:
                 peer.settimeout(5)
-                peer.sendall(b"GAMBIT-67/10\n")
+                peer.sendall(b"CHESSCADE/1\n")
                 with peer.makefile("rb") as reader:
-                    if reader.readline(32) != b"GAMBIT-67/10\n":
+                    if reader.readline(32) != b"CHESSCADE/1\n":
                         raise ValueError("Несовместимая версия игры.")
                     peer.settimeout(None)
                     threading.Thread(target=self._write, daemon=True).start()

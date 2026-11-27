@@ -1,12 +1,16 @@
-# Гамбит 67
+# Chesscade
+
+![Логотип Chesscade](src/chesscade-logo.png)
 
 Шахматы с аркадными испытаниями для Windows 10/11 x64. Доступны игра против Stockfish 19, вдвоём за одним компьютером и по локальной сети.
 
 ## Установка
 
-1. Откройте [последний релиз на GitHub](https://github.com/arknzs/gambit67/releases/latest).
-2. В разделе **Assets** скачайте `Gambit67-Setup.msi`, запустите его и откройте **Gambit 67** из меню «Пуск».
-3. Для запуска без установки скачайте `Gambit67.exe` из того же релиза и откройте файл.
+1. Откройте [последний релиз на GitHub](https://github.com/arknzs/chesscade/releases/latest).
+2. В разделе **Assets** скачайте установщик `Chesscade-Setup.msi`, запустите его и откройте **Chesscade** из меню «Пуск».
+3. Для запуска без установки скачайте `Chesscade.exe` из того же релиза и откройте файл.
+
+В выпусках до 1.7.0 установщик и EXE подписаны прежним названием. Chesscade подхватывает настройки и подключённые арены из предыдущей установки.
 
 Stockfish и встроенные испытания работают сразу. Для дополнительных боёв Undertale Boss Fight см. раздел ниже. Для LAN используйте одну и ту же версию на обоих ПК.
 
@@ -33,15 +37,15 @@ Stockfish и встроенные испытания работают сразу
 
 ## Сборка
 
-На Windows с Python 3.12 x64 (включая Tcl/Tk и pip) выполните `.\build.ps1`. Результаты появятся в `dist`. Готовая игра запускается без Python. MSI устанавливает её в профиль пользователя, создаёт ярлык в «Пуск» и поддерживает удаление через настройки Windows.
+На Windows с Python 3.12 x64 (включая Tcl/Tk и pip) выполните `.\build.ps1`. Результаты появятся в `dist/Chesscade-1.7.0`. Готовая игра запускается без Python. MSI устанавливает её в профиль пользователя, создаёт ярлык в «Пуск» и поддерживает удаление через настройки Windows.
 
 Для пересборки комплектного интерфейсного класса используйте JDK 17+ и скомпилированный внешний проект:
 
 ```powershell
-javac --release 17 -encoding UTF-8 -cp "C:\Games\undertale-boss-fight\build\classes\java\main" -d src src\GambitEncounter.java
+javac --release 17 -encoding UTF-8 -cp "C:\Games\undertale-boss-fight\build\classes\java\main" -d src src\ChesscadeEncounter.java
 ```
 
-Правила реализованы библиотекой [python-chess](https://github.com/niklasf/python-chess). Исходный код Гамбит 67 распространяется по GPL-3.0 или более поздней версии. Текст лицензии в `licenses/chess-GPL-3.txt`.
+Правила реализованы библиотекой [python-chess](https://github.com/niklasf/python-chess). Исходный код Chesscade распространяется по GPL-3.0 или более поздней версии. Текст лицензии в `licenses/chess-GPL-3.txt`.
 
 ## Реванш и вызовы QTE
 

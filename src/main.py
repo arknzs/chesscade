@@ -15,6 +15,7 @@ from tkinter import filedialog
 
 import chess
 import chess.engine
+from PIL import Image, ImageTk
 import subprocess
 from concurrent.futures import ThreadPoolExecutor
 
@@ -99,8 +100,11 @@ class PartyMenu:
 class App:
     def __init__(self, root):
         self.root = root
-        root.title("Гамбит 67")
-        root.iconbitmap(str(Path(__file__).with_name("gambit.ico")))
+        root.title("Chesscade")
+        root.iconbitmap(str(Path(__file__).with_name("chesscade.ico")))
+        with Image.open(Path(__file__).with_name("chesscade-logo.png")) as logo:
+            logo.thumbnail((292,75),Image.Resampling.LANCZOS)
+            self.logo=ImageTk.PhotoImage(logo,master=root)
         root.geometry("1050x735")
         root.minsize(825,650)
         root.configure(bg=INK)
@@ -115,7 +119,24 @@ class App:
         self.variants=[tk.BooleanVar(value=True) for _ in range(6)]
         self.circuit=tk.BooleanVar(value=False)
         self.motion=tk.BooleanVar(value=True)
-        self.config_path=Path(os.environ["LOCALAPPDATA"])/"Gambit67"/"preferences.json"
+        local_data=Path(os.environ["LOCALAPPDATA"])
+        profile=local_data/"Chesscade"
+        legacy_profile=local_data/"Gambit67"
+        for name in ("preferences.json","music.json"):
+            previous=legacy_profile/name
+            destination=profile/name
+            if previous.is_file() and not destination.exists():
+                try:
+                    profile.mkdir(parents=True,exist_ok=True)
+                    shutil.copy2(previous,destination)
+                except OSError:
+                    pass
+        self.config_path=profile/"preferences.json"
+        self.encounter_path=local_data/"ChesscadeEncounters"
+        legacy_encounters=local_data/"Gambit67Encounters"
+        main_class="build/classes/java/main/Main.class"
+        if not (self.encounter_path/main_class).is_file() and (legacy_encounters/main_class).is_file():
+            self.encounter_path=legacy_encounters
         self.music=Soundtrack(self.config_path.with_name("music.json"))
         self.music_enabled=tk.BooleanVar(value=self.music.enabled)
         self.music_volume=tk.IntVar(value=self.music.volume)
@@ -137,7 +158,7 @@ class App:
         self.banner = tk.Frame(root,bg=INK)
         self.banner.pack(fill="x",padx=26,pady=(17,12))
         label(self.banner,"◈",23,MINT,True).pack(side="left")
-        label(self.banner,"  ГАМБИТ 67",18,PAPER,True).pack(side="left")
+        label(self.banner,"  Chesscade",18,PAPER,True).pack(side="left")
         label(self.banner,"ШАХМАТЫ   /   АРКАДА",9,MUTED,True).pack(side="right")
         self.menu_page = None
         self.duel=None
@@ -261,7 +282,7 @@ class App:
         self.menu_backdrop(page)
         menu=tk.Frame(page,bg=CARD,padx=28,pady=22,highlightbackground="#493660",highlightthickness=1)
         menu.place(relx=.5,rely=.5,anchor="center")
-        label(menu,"Главное меню",27,PAPER,True).pack(pady=(0,14))
+        tk.Label(menu,image=self.logo,bg=CARD,bd=0).pack(pady=(0,16))
         for title,action in [("Новая партия",self.setup),("Выбрать бой",self.catalog),("Практика",self.drills),("Настройки",self.settings),("Выход",self.close)]:
             button(menu,title,action,action==self.setup).pack(fill="x",pady=4)
 
@@ -438,7 +459,7 @@ class App:
         if isinstance(key,int):
             self.arena=Arena(page,dict(kind="arena",boss=key,sprint=self.sprint.get(),seed=random.randrange(1000000)),self.practice_done)
             return
-        project=self.external_path or Path(os.environ["LOCALAPPDATA"])/"Gambit67Encounters"
+        project=self.external_path or self.encounter_path
         try:
             if not (project/"build/classes/java/main/Main.class").is_file():
                 raise OSError("Сначала подключите сборку Undertale Boss Fight в настройках партии.")
@@ -703,7 +724,7 @@ class App:
 
     def launch_external(self):
         try:
-            self.proc,self.encounter_dir = launch(self.java(),self.external_path or Path(os.environ["LOCALAPPDATA"])/"Gambit67Encounters",self.state["event"]["seed"])
+            self.proc,self.encounter_dir = launch(self.java(),self.external_path or self.encounter_path,self.state["event"]["seed"])
             self.wait_overlay("Идёт бой в отдельном окне")
         except (OSError,TypeError) as exc:
             self.alert("Запуск боя",str(exc))

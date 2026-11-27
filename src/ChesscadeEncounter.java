@@ -8,13 +8,13 @@ import java.awt.Graphics2D;
 import java.util.Random;
 
 /** Launches one encounter in the player's existing local installation. */
-public final class GambitEncounter implements Scene {
+public final class ChesscadeEncounter implements Scene {
     private final Game game = new Game();
     private final GlobalState stats = GlobalState.get();
     private final BattleScene battle;
     private boolean abandoned;
 
-    private GambitEncounter(long seed, String choice) {
+    private ChesscadeEncounter(long seed, String choice) {
         int[] groups = {BossRegistry.TORIEL, BossRegistry.PAPYRUS, BossRegistry.SANS,
                         BossRegistry.ASGORE, BossRegistry.UNDYNE, BossRegistry.MUFFET,
                         BossRegistry.METTATON_EX, BossRegistry.ASRIEL};
@@ -63,8 +63,8 @@ public final class GambitEncounter implements Scene {
     }
 
     public static void main(String[] args) {
-        GambitEncounter encounter = new GambitEncounter(Long.parseLong(args[0]), args.length > 1 ? args[1] : "");
+        ChesscadeEncounter encounter = new ChesscadeEncounter(Long.parseLong(args[0]), args.length > 1 ? args[1] : "");
         encounter.game.setScene(encounter);
-        encounter.game.start("Gambit 67 / Undertale Boss Fight");
+        encounter.game.start("Chesscade / Undertale Boss Fight");
     }
 }

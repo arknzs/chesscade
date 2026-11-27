@@ -1,7 +1,7 @@
 $ErrorActionPreference = 'Stop'
 $compiler = Get-Command javac -ErrorAction SilentlyContinue
 if (!$compiler) {throw 'Install JDK 21+ and add javac to PATH.'}
-$repo = Join-Path $env:LOCALAPPDATA 'Gambit67Encounters'
+$repo = Join-Path $env:LOCALAPPDATA 'ChesscadeEncounters'
 $source = Join-Path $repo 'upstream'
 if (!(Test-Path "$source/.git")) {
     git clone --filter=blob:none --no-checkout https://github.com/ThakornToon/undertale-boss-fight.git $source
@@ -17,8 +17,8 @@ New-Item -Force -ItemType Directory $classes,$resources,"$repo/libs" | Out-Null
 Push-Location $source
 try {
     $sources = Get-ChildItem src/main/java -Recurse -Filter *.java | ForEach-Object { $_.FullName.Substring($source.Length+1).Replace('\','/') }
-    $sources | Set-Content sources-gambit.txt -Encoding Ascii
-    & $compiler.Source -encoding UTF-8 -cp 'libs/*' -d $classes '@sources-gambit.txt'
+    $sources | Set-Content sources-chesscade.txt -Encoding Ascii
+    & $compiler.Source -encoding UTF-8 -cp 'libs/*' -d $classes '@sources-chesscade.txt'
     if ($LASTEXITCODE) {throw 'Compilation failed'}
     Copy-Item 'src/main/resources/*' $resources -Recurse -Force
     Copy-Item 'libs/*.jar' "$repo/libs" -Force
